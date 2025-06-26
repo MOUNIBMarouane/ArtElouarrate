@@ -29,4 +29,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 RUN npm install -g pm2
 
 # Start with PM2 in production mode
-CMD ["pm2-runtime", "server-pro.js"]
+CMD ["pm2-runtime", "server.js"]

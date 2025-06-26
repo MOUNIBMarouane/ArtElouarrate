@@ -2,16 +2,16 @@
   "name": "elouarate-art-backend",
   "version": "2.0.0",
   "description": "Professional backend for ELOUARATE ART gallery with enterprise features",
-  "main": "server-clean.js",
+  "main": "server.js",
   "type": "module",
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
   },
   "scripts": {
-    "start": "node server-clean.js",
-    "dev": "node server-clean.js",
-    "dev:watch": "nodemon server-clean.js",
+    "start": "node server.js",
+    "dev": "node server.js",
+    "dev:watch": "nodemon server.js",
     "build": "npm run db:generate",
     "test": "echo 'Tests to be implemented' && exit 0",
     "db:generate": "npx prisma generate",
@@ -26,8 +26,8 @@
     "admin:reset-password": "node scripts/setup.js reset-password",
     "lint": "echo 'Linting passed'",
     "clean": "rm -rf node_modules && npm install",
-    "prod": "NODE_ENV=production node server-clean.js"
-},
+    "prod": "NODE_ENV=production node server.js"
+  },
   "dependencies": {
     "@prisma/client": "^5.9.1",
     "bcryptjs": "^2.4.3",
