@@ -1,0 +1,238 @@
+# ELOUARATE ART - Advanced SEO & Performance Optimization
+# =====================================================
+
+# Enable Rewrite Engine
+RewriteEngine On
+
+# Force HTTPS (SSL/TLS)
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Force WWW (Optional - uncomment if you want to force www)
+# RewriteCond %{HTTP_HOST} ^elouarateart\.com [NC]
+# RewriteRule ^(.*)$ https://www.elouarateart.com/$1 [L,R=301]
+
+# Remove WWW (Uncomment if you prefer non-www)
+RewriteCond %{HTTP_HOST} ^www\.elouarateart\.com [NC]
+RewriteRule ^(.*)$ https://elouarateart.com/$1 [L,R=301]
+
+# Remove trailing slash
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} /+$
+RewriteRule ^(.*)/ /$1 [R=301,L]
+
+# SEO-Friendly URLs
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.html [L]
+
+# Prevent access to sensitive files
+<Files ~ "^\.">
+    Require all denied
+</Files>
+
+<FilesMatch "\.(htaccess|htpasswd|ini|log|sh|inc|bak|sql)$">
+    Require all denied
+</FilesMatch>
+
+# Security Headers for SEO Trust Signals
+<IfModule mod_headers.c>
+    # HSTS (HTTP Strict Transport Security)
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    
+    # Prevent clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+    
+    # XSS Protection
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Content Type Options
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # Referrer Policy for better privacy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # Content Security Policy
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.gpteng.co https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https:; media-src 'self'; object-src 'none'; frame-src 'self';"
+    
+    # Feature Policy
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+</IfModule>
+
+# Compression for better performance (affects SEO rankings)
+<IfModule mod_deflate.c>
+    # Compress HTML, CSS, JavaScript, Text, XML and fonts
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/vnd.ms-fontobject
+    AddOutputFilterByType DEFLATE application/x-font
+    AddOutputFilterByType DEFLATE application/x-font-opentype
+    AddOutputFilterByType DEFLATE application/x-font-otf
+    AddOutputFilterByType DEFLATE application/x-font-truetype
+    AddOutputFilterByType DEFLATE application/x-font-ttf
+    AddOutputFilterByType DEFLATE application/x-javascript
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE font/opentype
+    AddOutputFilterByType DEFLATE font/otf
+    AddOutputFilterByType DEFLATE font/ttf
+    AddOutputFilterByType DEFLATE image/svg+xml
+    AddOutputFilterByType DEFLATE image/x-icon
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/javascript
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/xml
+    
+    # Remove browser bugs (only needed for really old browsers)
+    BrowserMatch ^Mozilla/4 gzip-only-text/html
+    BrowserMatch ^Mozilla/4\.0[678] no-gzip
+    BrowserMatch \bMSIE !no-gzip !gzip-only-text/html
+    Header append Vary User-Agent
+</IfModule>
+
+# Browser Caching for Performance (affects SEO)
+<IfModule mod_expires.c>
+    ExpiresActive on
+    
+    # Images
+    ExpiresByType image/jpg "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 year"
+    
+    # CSS and JavaScript
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType application/x-javascript "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+    
+    # Fonts
+    ExpiresByType application/x-font-ttf "access plus 1 year"
+    ExpiresByType font/opentype "access plus 1 year"
+    ExpiresByType application/x-font-woff "access plus 1 year"
+    ExpiresByType application/font-woff2 "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    
+    # HTML
+    ExpiresByType text/html "access plus 1 hour"
+    
+    # XML and JSON
+    ExpiresByType application/xml "access plus 1 hour"
+    ExpiresByType text/xml "access plus 1 hour"
+    ExpiresByType application/json "access plus 1 hour"
+    
+    # Default
+    ExpiresDefault "access plus 1 month"
+</IfModule>
+
+# Alternative caching using mod_headers
+<IfModule mod_headers.c>
+    # 1 Month for most static assets
+    <FilesMatch "\.(css|js|jpg|jpeg|png|gif|webp|ico|svg|woff|woff2|ttf|eot)$">
+        Header set Cache-Control "max-age=2629746, public"
+    </FilesMatch>
+    
+    # 1 Hour for HTML
+    <FilesMatch "\.(html|htm)$">
+        Header set Cache-Control "max-age=3600, public, must-revalidate"
+    </FilesMatch>
+    
+    # 1 Hour for XML and JSON
+    <FilesMatch "\.(xml|json)$">
+        Header set Cache-Control "max-age=3600, public"
+    </FilesMatch>
+</IfModule>
+
+# Optimize file delivery
+<IfModule mod_mime.c>
+    # Proper MIME types
+    AddType application/font-woff2 .woff2
+    AddType application/font-woff .woff
+    AddType application/vnd.ms-fontobject .eot
+    AddType font/opentype .otf
+    AddType image/svg+xml .svg
+    AddType application/json .json
+    AddType application/ld+json .jsonld
+    AddType application/xml .xml
+    AddType text/xml .xml
+</IfModule>
+
+# ETags for better caching
+<IfModule mod_headers.c>
+    Header unset ETag
+</IfModule>
+FileETag None
+
+# Custom Error Pages (SEO-friendly)
+ErrorDocument 404 /404.html
+ErrorDocument 500 /500.html
+ErrorDocument 403 /403.html
+
+# Prevent hotlinking (save bandwidth and improve performance)
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTP_REFERER} !^$
+    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?elouarateart\.com [NC]
+    RewriteCond %{REQUEST_URI} \.(jpg|jpeg|png|gif|webp|svg)$ [NC]
+    RewriteRule \.(jpg|jpeg|png|gif|webp|svg)$ - [F]
+</IfModule>
+
+# Optimize file serving
+<IfModule mod_rewrite.c>
+    # Serve WebP images when supported
+    RewriteCond %{HTTP_ACCEPT} image/webp
+    RewriteCond %{REQUEST_FILENAME} \.(jpe?g|png)$
+    RewriteCond %{REQUEST_FILENAME}.webp -f
+    RewriteRule (.+)\.(jpe?g|png)$ $1.$2.webp [T=image/webp,E=accept:1]
+</IfModule>
+
+# Add WebP headers
+<IfModule mod_headers.c>
+    <FilesMatch "\.(webp)$">
+        Header append Vary Accept
+    </FilesMatch>
+</IfModule>
+
+# Canonical URL enforcement
+<IfModule mod_rewrite.c>
+    # Remove multiple slashes
+    RewriteCond %{THE_REQUEST} //+
+    RewriteRule ^(.*)$ /$1 [R=301,L]
+    
+    # Remove index.html from URLs
+    RewriteCond %{THE_REQUEST} /index\.html[\s?] [NC]
+    RewriteRule ^(.*)index\.html$ /$1 [R=301,L]
+</IfModule>
+
+# Server signature (security)
+ServerSignature Off
+
+# Limit file uploads (security)
+LimitRequestBody 10485760
+
+# Prevent access to version control
+<DirectoryMatch "\.git">
+    Require all denied
+</DirectoryMatch>
+
+# Block bad bots (improve server performance for SEO crawlers)
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTP_USER_AGENT} ^.*(AhrefsBot|MJ12bot|SemrushBot).*$ [NC]
+    RewriteRule .* - [R=403,L]
+</IfModule>
+
+# Optimize for Core Web Vitals
+<IfModule mod_headers.c>
+    # Preload critical resources
+    <FilesMatch "\.(css)$">
+        Header set Link "</style.css>; rel=preload; as=style"
+    </FilesMatch>
+    
+    # DNS prefetch for external resources
+    Header add Link "<//fonts.googleapis.com>; rel=dns-prefetch"
+    Header add Link "<//fonts.gstatic.com>; rel=dns-prefetch"
+    Header add Link "<//cdn.gpteng.co>; rel=dns-prefetch"
+</IfModule> 

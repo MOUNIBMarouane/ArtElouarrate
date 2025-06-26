@@ -1,0 +1,27 @@
+{
+  "name": "elouarate-art",
+  "version": "1.0.0",
+  "description": "Professional art gallery management system",
+  "main": "start-server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node start-server.js",
+    "backend": "cd backend && node server-clean.js",
+    "frontend": "cd Frontend && npm run dev",
+    "dev": "node start-server.js",
+    "clean": "npx kill-port 3000 && npx kill-port 8080",
+    "test": "echo \"Tests to be implemented\" && exit 0"
+  },
+  "keywords": [
+    "art",
+    "gallery",
+    "admin",
+    "dashboard",
+    "professional"
+  ],
+  "author": "ELOUARATE ART Team",
+  "license": "MIT",
+  "devDependencies": {
+    "kill-port": "^2.0.1"
+  }
+} 

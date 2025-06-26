@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        img { max-width: 300px; margin: 10px; border: 1px solid #ddd; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Image Serving Test</h1>
+    
+    <div class="test-section">
+        <h3>Test 1: Direct /uploads/ path</h3>
+        <img src="http://localhost:3000/uploads/image-1750789581695-982511597.jpeg" 
+             onload="document.getElementById('test1').innerHTML='✅ SUCCESS: Direct uploads path works'"
+             onerror="document.getElementById('test1').innerHTML='❌ ERROR: Direct uploads path failed'">
+        <div id="test1">Loading...</div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 2: API /api/images/ path</h3>
+        <img src="http://localhost:3000/api/images/image-1750789581695-982511597.jpeg" 
+             onload="document.getElementById('test2').innerHTML='✅ SUCCESS: API images path works'"
+             onerror="document.getElementById('test2').innerHTML='❌ ERROR: API images path failed'">
+        <div id="test2">Loading...</div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 3: Relative path (same domain)</h3>
+        <img src="/uploads/image-1750789581695-982511597.jpeg" 
+             onload="document.getElementById('test3').innerHTML='✅ SUCCESS: Relative path works'"
+             onerror="document.getElementById('test3').innerHTML='❌ ERROR: Relative path failed'">
+        <div id="test3">Loading...</div>
+    </div>
+    
+    <script>
+        console.log('Testing image paths...');
+        
+        // Test fetch API as well
+        fetch('http://localhost:3000/uploads/image-1750789581695-982511597.jpeg')
+            .then(response => {
+                console.log('Fetch test - Status:', response.status);
+                console.log('Fetch test - Headers:', Object.fromEntries(response.headers.entries()));
+                if (response.ok) {
+                    document.getElementById('fetch-test').innerHTML = '✅ SUCCESS: Fetch API works';
+                } else {
+                    document.getElementById('fetch-test').innerHTML = '❌ ERROR: Fetch API failed - ' + response.status;
+                }
+            })
+            .catch(error => {
+                console.error('Fetch test error:', error);
+                document.getElementById('fetch-test').innerHTML = '❌ ERROR: Fetch API failed - ' + error.message;
+            });
+    </script>
+    
+    <div class="test-section">
+        <h3>Test 4: Fetch API</h3>
+        <div id="fetch-test">Testing fetch API...</div>
+    </div>
+</body>
+</html> 

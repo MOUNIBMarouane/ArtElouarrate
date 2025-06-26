@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🖼️ Image Management Test - ELOUARATE ART</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #5a67d8;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            background: #f8fafc;
+        }
+        .section h2 {
+            color: #2d3748;
+            margin-top: 0;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        button {
+            background: #5a67d8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: #4c51bf;
+            transform: translateY(-2px);
+        }
+        button.danger {
+            background: #e53e3e;
+        }
+        button.danger:hover {
+            background: #c53030;
+        }
+        button.warning {
+            background: #dd6b20;
+        }
+        button.warning:hover {
+            background: #c05621;
+        }
+        .result {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .success {
+            background: #f0fff4;
+            border: 2px solid #68d391;
+            color: #22543d;
+        }
+        .error {
+            background: #fed7d7;
+            border: 2px solid #fc8181;
+            color: #742a2a;
+        }
+        .info {
+            background: #ebf8ff;
+            border: 2px solid #63b3ed;
+            color: #2a4365;
+        }
+        .image-preview {
+            margin: 10px 0;
+            text-align: center;
+        }
+        .image-preview img {
+            max-width: 300px;
+            max-height: 200px;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+        }
+        .image-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .image-item {
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            background: white;
+        }
+        .image-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-bottom: 8px;
+        }
+        .image-item .image-info {
+            font-size: 11px;
+            color: #666;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖼️ Image Management Test</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 30px;">
+            Test all image upload, replace, and delete operations
+        </p>
+
+        <!-- Image Upload Section -->
+        <div class="section">
+            <h2>📤 Upload New Image</h2>
+            <div class="form-group">
+                <label for="imageFile">Select Image File:</label>
+                <input type="file" id="imageFile" accept="image/*">
+            </div>
+            <button onclick="uploadImage()">Upload Image</button>
+            <div id="uploadResult" class="result" style="display: none;"></div>
+            <div id="uploadPreview" class="image-preview"></div>
+        </div>
+
+        <!-- List Images Section -->
+        <div class="section">
+            <h2>📋 Current Images</h2>
+            <button onclick="listArtworks()">Refresh Image List</button>
+            <div id="imageList" class="image-list"></div>
+        </div>
+
+        <!-- Replace Image Section -->
+        <div class="section">
+            <h2>🔄 Replace Image</h2>
+            <div class="form-group">
+                <label for="replaceImageId">Image ID to Replace:</label>
+                <input type="text" id="replaceImageId" placeholder="Enter image ID">
+            </div>
+            <div class="form-group">
+                <label for="replaceFile">New Image File:</label>
+                <input type="file" id="replaceFile" accept="image/*">
+            </div>
+            <button class="warning" onclick="replaceImage()">Replace Image</button>
+            <div id="replaceResult" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- Delete Image Section -->
+        <div class="section">
+            <h2>🗑️ Delete Image</h2>
+            <div class="form-group">
+                <label for="deleteImageId">Image ID to Delete:</label>
+                <input type="text" id="deleteImageId" placeholder="Enter image ID">
+            </div>
+            <button class="danger" onclick="deleteImage()">Delete Image</button>
+            <div id="deleteResult" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- Check Missing Images Section -->
+        <div class="section">
+            <h2>🔍 Check Missing Images</h2>
+            <p style="color: #666; font-size: 14px;">Find images that exist in database but are missing from filesystem</p>
+            <button onclick="checkMissingImages()">Check Missing Images</button>
+            <button class="danger" onclick="bulkFixMissingImages()">Remove Missing Records</button>
+            <div id="missingResult" class="result" style="display: none;"></div>
+            <div id="missingList" class="image-list"></div>
+        </div>
+
+        <!-- Cleanup Section -->
+        <div class="section">
+            <h2>🧹 Cleanup Temporary Images</h2>
+            <p style="color: #666; font-size: 14px;">Remove temporary images older than 1 hour</p>
+            <button onclick="cleanupTempImages()">Cleanup Temp Images</button>
+            <div id="cleanupResult" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000';
+
+        function showResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `result ${isError ? 'error' : 'success'}`;
+            element.textContent = JSON.stringify(data, null, 2);
+        }
+
+        function showInfo(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = 'result info';
+            element.textContent = message;
+        }
+
+        async function uploadImage() {
+            const fileInput = document.getElementById('imageFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showResult('uploadResult', { error: 'Please select a file first' }, true);
+                return;
+            }
+
+            showInfo('uploadResult', 'Uploading image...');
+
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+
+                const response = await fetch(`${API_BASE}/api/upload/image`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult('uploadResult', result);
+                    
+                    // Show preview
+                    const preview = document.getElementById('uploadPreview');
+                    preview.innerHTML = `
+                        <h4>Uploaded Image Preview:</h4>
+                        <img src="${API_BASE}${result.data.url}" alt="Uploaded image">
+                        <p><strong>Image ID:</strong> ${result.data.id}</p>
+                        <p><strong>Filename:</strong> ${result.data.filename}</p>
+                    `;
+                } else {
+                    showResult('uploadResult', result, true);
+                }
+            } catch (error) {
+                showResult('uploadResult', { error: error.message }, true);
+            }
+        }
+
+        async function listArtworks() {
+            showInfo('imageList', 'Loading artworks and images...');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/artworks`);
+                const result = await response.json();
+                
+                if (result.success && result.data?.artworks) {
+                    const imageList = document.getElementById('imageList');
+                    let html = '';
+                    
+                    result.data.artworks.forEach(artwork => {
+                        if (artwork.images && artwork.images.length > 0) {
+                            artwork.images.forEach(image => {
+                                html += `
+                                    <div class="image-item">
+                                        <img src="${API_BASE}${image.url}" alt="${artwork.name}">
+                                        <div class="image-info">
+                                            <strong>ID:</strong> ${image.id}<br>
+                                            <strong>Artwork:</strong> ${artwork.name}<br>
+                                            <strong>File:</strong> ${image.filename}<br>
+                                            <strong>Size:</strong> ${image.size} bytes
+                                        </div>
+                                        <button onclick="document.getElementById('replaceImageId').value='${image.id}'">
+                                            Use for Replace
+                                        </button>
+                                        <button onclick="document.getElementById('deleteImageId').value='${image.id}'">
+                                            Use for Delete
+                                        </button>
+                                    </div>
+                                `;
+                            });
+                        }
+                    });
+                    
+                    if (html) {
+                        imageList.innerHTML = html;
+                    } else {
+                        imageList.innerHTML = '<p style="text-align: center; color: #666;">No images found</p>';
+                    }
+                } else {
+                    showResult('imageList', result, true);
+                }
+            } catch (error) {
+                const imageList = document.getElementById('imageList');
+                imageList.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+
+        async function replaceImage() {
+            const imageId = document.getElementById('replaceImageId').value;
+            const fileInput = document.getElementById('replaceFile');
+            const file = fileInput.files[0];
+            
+            if (!imageId || !file) {
+                showResult('replaceResult', { error: 'Please provide both image ID and new file' }, true);
+                return;
+            }
+
+            showInfo('replaceResult', 'Replacing image...');
+
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+
+                const response = await fetch(`${API_BASE}/api/upload/image/${imageId}`, {
+                    method: 'PUT',
+                    body: formData
+                });
+
+                const result = await response.json();
+                showResult('replaceResult', result, !result.success);
+                
+                if (result.success) {
+                    listArtworks(); // Refresh the list
+                }
+            } catch (error) {
+                showResult('replaceResult', { error: error.message }, true);
+            }
+        }
+
+        async function deleteImage() {
+            const imageId = document.getElementById('deleteImageId').value;
+            
+            if (!imageId) {
+                showResult('deleteResult', { error: 'Please provide image ID' }, true);
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete image ${imageId}?`)) {
+                return;
+            }
+
+            showInfo('deleteResult', 'Deleting image...');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/upload/image/${imageId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                showResult('deleteResult', result, !result.success);
+                
+                if (result.success) {
+                    listArtworks(); // Refresh the list
+                }
+            } catch (error) {
+                showResult('deleteResult', { error: error.message }, true);
+            }
+        }
+
+        async function cleanupTempImages() {
+            showInfo('cleanupResult', 'Cleaning up temporary images...');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/cleanup-temp-images`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+                showResult('cleanupResult', result, !result.success);
+            } catch (error) {
+                showResult('cleanupResult', { error: error.message }, true);
+            }
+        }
+
+        async function checkMissingImages() {
+            showInfo('missingResult', 'Checking for missing images...');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/check-missing-images`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult('missingResult', {
+                        summary: result.message,
+                        details: result.data
+                    });
+                    
+                    // Display missing images
+                    const missingList = document.getElementById('missingList');
+                    if (result.data.missingImages.length > 0) {
+                        let html = '<h4>Missing Images:</h4>';
+                        result.data.missingImages.forEach(missing => {
+                            html += `
+                                <div class="image-item" style="border-color: #fc8181;">
+                                    <div style="height: 120px; background: #fed7d7; display: flex; align-items: center; justify-content: center; border-radius: 5px; margin-bottom: 8px;">
+                                        <span style="color: #742a2a;">❌ Missing</span>
+                                    </div>
+                                    <div class="image-info">
+                                        <strong>Artwork:</strong> ${missing.artworkName}<br>
+                                        <strong>Category:</strong> ${missing.categoryName}<br>
+                                        <strong>Filename:</strong> ${missing.filename}<br>
+                                        <strong>Image ID:</strong> ${missing.imageId}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        missingList.innerHTML = html;
+                    } else {
+                        missingList.innerHTML = '<p style="text-align: center; color: #22543d; background: #f0fff4; padding: 20px; border-radius: 8px;">✅ All images are healthy!</p>';
+                    }
+                } else {
+                    showResult('missingResult', result, true);
+                    document.getElementById('missingList').innerHTML = '';
+                }
+            } catch (error) {
+                showResult('missingResult', { error: error.message }, true);
+                document.getElementById('missingList').innerHTML = '';
+            }
+        }
+
+        async function bulkFixMissingImages() {
+            if (!confirm('This will remove all missing image records from the database. Continue?')) {
+                return;
+            }
+
+            showInfo('missingResult', 'Removing missing image records...');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/bulk-fix-missing-images`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+                showResult('missingResult', result, !result.success);
+                
+                if (result.success) {
+                    // Refresh the missing images check
+                    setTimeout(() => {
+                        checkMissingImages();
+                        listArtworks();
+                    }, 1000);
+                }
+            } catch (error) {
+                showResult('missingResult', { error: error.message }, true);
+            }
+        }
+
+        // Auto-load images on page load
+        window.addEventListener('load', () => {
+            listArtworks();
+            checkMissingImages();
+        });
+    </script>
+</body>
+</html> 

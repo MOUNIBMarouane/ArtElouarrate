@@ -1,0 +1,66 @@
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://elouarateart.com/sitemap.xml
+
+# Allow all major search engine bots
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: YandexBot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /private/
+Disallow: /*.json$
+Disallow: /src/
+Disallow: /node_modules/
+
+# Allow images and assets
+Allow: /images/
+Allow: /assets/
+Allow: /uploads/
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.png$
+Allow: /*.gif$
+Allow: /*.webp$
+Allow: /*.svg$
+Allow: /*.css$
+Allow: /*.js$
+
+# Crawl delay for politeness
+Crawl-delay: 1
+
+# Cache directive
+Cache-Control: public, max-age=86400

@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+  
+  <!-- Homepage -->
+  <url>
+    <loc>https://elouarateart.com/</loc>
+    <lastmod>2024-12-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://elouarateart.com/og-image.jpg</image:loc>
+      <image:title>ELOUARATE ART - Premium Moroccan Art Gallery</image:title>
+      <image:caption>Discover premium Moroccan paintings and original artworks</image:caption>
+    </image:image>
+  </url>
+  
+  <!-- Artwork Gallery Page -->
+  <url>
+    <loc>https://elouarateart.com/artwork</loc>
+    <lastmod>2024-12-20</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://elouarateart.com/gallery-preview.jpg</image:loc>
+      <image:title>Premium Moroccan Paintings Gallery</image:title>
+      <image:caption>Browse our collection of authentic Moroccan artworks</image:caption>
+    </image:image>
+  </url>
+  
+  <!-- Artist Showcase Page -->
+  <url>
+    <loc>https://elouarateart.com/artist</loc>
+    <lastmod>2024-12-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://elouarateart.com/artist-profile.jpg</image:loc>
+      <image:title>ELOUARATE Artist Profile</image:title>
+      <image:caption>Meet the talented Moroccan artist behind these masterpieces</image:caption>
+    </image:image>
+  </url>
+  
+  <!-- Art Management Page -->
+  <url>
+    <loc>https://elouarateart.com/art-management</loc>
+    <lastmod>2024-12-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <!-- Exhibition Page -->
+  <url>
+    <loc>https://elouarateart.com/ma3rid</loc>
+    <lastmod>2024-12-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://elouarateart.com/exhibition-preview.jpg</image:loc>
+      <image:title>Moroccan Art Exhibition</image:title>
+      <image:caption>Explore our curated art exhibition</image:caption>
+    </image:image>
+  </url>
+  
+  <!-- User Authentication Pages -->
+  <url>
+    <loc>https://elouarateart.com/login</loc>
+    <lastmod>2024-12-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <url>
+    <loc>https://elouarateart.com/register</loc>
+    <lastmod>2024-12-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  
+  <!-- Admin Pages (Lower Priority) -->
+  <url>
+    <loc>https://elouarateart.com/admin-login</loc>
+    <lastmod>2024-12-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  
+  <!-- Profile Page -->
+  <url>
+    <loc>https://elouarateart.com/profile</loc>
+    <lastmod>2024-12-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <!-- Data Test Page -->
+  <url>
+    <loc>https://elouarateart.com/data-test</loc>
+    <lastmod>2024-12-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  
+  <!-- Category Pages -->
+  <url>
+    <loc>https://elouarateart.com/category/oil-paintings</loc>
+    <lastmod>2024-12-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://elouarateart.com/oil-paintings-category.jpg</image:loc>
+      <image:title>Premium Oil Paintings Collection</image:title>
+      <image:caption>Authentic Moroccan oil paintings by ELOUARATE ART</image:caption>
+    </image:image>
+  </url>
+  
+  <url>
+    <loc>https://elouarateart.com/category/portraits</loc>
+    <lastmod>2024-12-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://elouarateart.com/portraits-category.jpg</image:loc>
+      <image:title>Custom Portrait Paintings</image:title>
+      <image:caption>Professional portrait paintings and custom commissions</image:caption>
+    </image:image>
+  </url>
+  
+  <url>
+    <loc>https://elouarateart.com/category/landscapes</loc>
+    <lastmod>2024-12-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://elouarateart.com/landscapes-category.jpg</image:loc>
+      <image:title>Moroccan Landscape Paintings</image:title>
+      <image:caption>Breathtaking Moroccan landscapes and scenery paintings</image:caption>
+    </image:image>
+  </url>
+  
+  <url>
+    <loc>https://elouarateart.com/category/abstract</loc>
+    <lastmod>2024-12-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://elouarateart.com/abstract-category.jpg</image:loc>
+      <image:title>Abstract Art Collection</image:title>
+      <image:caption>Contemporary abstract paintings with Moroccan influences</image:caption>
+    </image:image>
+  </url>
+  
+  <!-- Individual Artwork Pages (Dynamic - Examples) -->
+  <url>
+    <loc>https://elouarateart.com/artwork/moroccan-sunset</loc>
+    <lastmod>2024-12-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://elouarateart.com/artworks/moroccan-sunset.jpg</image:loc>
+      <image:title>Moroccan Sunset - Original Oil Painting</image:title>
+      <image:caption>Beautiful Moroccan sunset landscape painting</image:caption>
+    </image:image>
+  </url>
+  
+  <url>
+    <loc>https://elouarateart.com/artwork/berber-portrait</loc>
+    <lastmod>2024-12-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://elouarateart.com/artworks/berber-portrait.jpg</image:loc>
+      <image:title>Traditional Berber Portrait - Authentic Moroccan Art</image:title>
+      <image:caption>Traditional Berber woman portrait painting</image:caption>
+    </image:image>
+  </url>
+  
+  <url>
+    <loc>https://elouarateart.com/artwork/atlas-mountains</loc>
+    <lastmod>2024-12-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image>
+      <image:loc>https://elouarateart.com/artworks/atlas-mountains.jpg</image:loc>
+      <image:title>Atlas Mountains Landscape - Premium Moroccan Art</image:title>
+      <image:caption>Majestic Atlas Mountains landscape painting</image:caption>
+    </image:image>
+  </url>
+  
+  <!-- Blog/Articles Pages (Future SEO Content) -->
+  <url>
+    <loc>https://elouarateart.com/blog/moroccan-art-history</loc>
+    <lastmod>2024-12-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://elouarateart.com/blog/oil-painting-techniques</loc>
+    <lastmod>2024-12-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://elouarateart.com/blog/art-investment-guide</loc>
+    <lastmod>2024-12-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+</urlset> 
