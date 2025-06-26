@@ -2671,7 +2671,6 @@ const initializeSystem = async () => {
     }
     
     // Clean up expired tokens
-    await adminService.cleanupExpiredTokens();
     
     console.log('✅ System initialization completed');
   } catch (error) {
