@@ -42,11 +42,34 @@ app.use(compression());
 // Admin routes
 app.post('/api/admin/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const result = await adminService.loginAdmin(email, password);
+    const { emailOrUsername, password } = req.body;
+    if (!emailOrUsername || !password) {
+      return res.status(400).json({ error: 'Email/username and password are required' });
+    }
+    const result = await adminService.loginAdmin(emailOrUsername, password);
     res.json(result);
   } catch (error) {
     res.status(401).json({ error: error.message });
+  }
+});
+
+app.post('/api/admin/register', async (req, res) => {
+  try {
+    const { email, password, username } = req.body;
+    if (!email || !password || !username) {
+      return res.status(400).json({ error: 'Email, password and username are required' });
+    }
+    const admin = await adminService.createAdmin(email, password, username);
+    res.status(201).json({ 
+      message: 'Admin created successfully',
+      admin: {
+        id: admin.id,
+        email: admin.email,
+        username: admin.username
+      }
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 });
 
@@ -80,8 +103,21 @@ const adminService = {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const admin = await prisma.admin.findUnique({
-        where: { id: decoded.id }
+        where: { id: decoded.id },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          isActive: true,
+          isSuperAdmin: true,
+          permissions: true
+        }
       });
+      
+      if (!admin || !admin.isActive) {
+        return null;
+      }
+      
       return admin;
     } catch (error) {
       console.error('Admin validation error:', error.message);
@@ -89,13 +125,16 @@ const adminService = {
     }
   },
 
-  async createAdmin(email, password) {
+  async createAdmin(email, password, username) {
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
       const admin = await prisma.admin.create({
         data: {
           email,
-          password: hashedPassword
+          password: hashedPassword,
+          username,
+          isActive: true,
+          permissions: '[]'
         }
       });
       return admin;
@@ -107,26 +146,68 @@ const adminService = {
 
   async loginAdmin(email, password) {
     try {
-      const admin = await prisma.admin.findUnique({
-        where: { email }
+      const admin = await prisma.admin.findFirst({
+        where: {
+          OR: [
+            { email },
+            { username: email } // Allow login with either email or username
+          ],
+          isActive: true
+        }
       });
       
       if (!admin) {
         throw new Error('Admin not found');
       }
 
+      if (admin.lockoutUntil && admin.lockoutUntil > new Date()) {
+        throw new Error('Account is temporarily locked');
+      }
+
       const isValid = await bcrypt.compare(password, admin.password);
       if (!isValid) {
+        // Update login attempts
+        await prisma.admin.update({
+          where: { id: admin.id },
+          data: {
+            loginAttempts: admin.loginAttempts + 1,
+            lockoutUntil: admin.loginAttempts >= 4 ? new Date(Date.now() + 15 * 60 * 1000) : null // Lock for 15 minutes after 5 attempts
+          }
+        });
         throw new Error('Invalid password');
       }
 
+      // Reset login attempts on successful login
+      await prisma.admin.update({
+        where: { id: admin.id },
+        data: {
+          loginAttempts: 0,
+          lockoutUntil: null,
+          lastLogin: new Date()
+        }
+      });
+
       const token = jwt.sign(
-        { id: admin.id, email: admin.email },
+        { 
+          id: admin.id,
+          email: admin.email,
+          username: admin.username,
+          isSuperAdmin: admin.isSuperAdmin
+        },
         process.env.JWT_SECRET,
         { expiresIn: '24h' }
       );
 
-      return { admin, token };
+      return { 
+        token,
+        admin: {
+          id: admin.id,
+          email: admin.email,
+          username: admin.username,
+          isSuperAdmin: admin.isSuperAdmin,
+          permissions: JSON.parse(admin.permissions)
+        }
+      };
     } catch (error) {
       console.error('Login error:', error.message);
       throw error;
