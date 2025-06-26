@@ -3,11 +3,10 @@
 WORKDIR /app
 
 # Copy backend files
-COPY backend/package*.json ./backend/
-COPY backend/prisma ./backend/prisma/
+COPY backend/package*.json ./
+COPY backend/prisma ./prisma/
 
 # Install dependencies
-WORKDIR /app/backend
 RUN npm install
 
 # Copy all backend code
