@@ -785,23 +785,9 @@ app.get('/api/auth/admin/dashboard/stats', handleAsync(async (req, res) => {
 // =============================================================================
 
 // Health check
-app.get('/api/health', handleAsync(async (req, res) => {
-  res.json(formatResponse(
-    true,
-    {
-      status: 'OK',
-      uptime: Math.floor(process.uptime()),
-      timestamp: new Date().toISOString(),
-      version: '2.0.0-professional',
-      database: 'SQL Server Connected',
-      memory: {
-        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
-      }
-    },
-    'Server is running optimally'
-  ));
-}));
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 // Categories endpoint
 app.get('/api/categories', handleAsync(async (req, res) => {
@@ -2681,61 +2667,25 @@ const initializeSystem = async () => {
 // Start server with proper error handling
 const startServer = async () => {
   try {
-    // Initialize admin system
+    // Initialize system
     await initializeSystem();
     
-    const server = app.listen(PORT, () => {
-      console.log('🚀 ================================================');
-      console.log('🎨 ELOUARATE ART - Professional Server');
-      console.log('🚀 ================================================');
-      console.log(`🌐 Server URL: http://localhost:${PORT}`);
-      console.log(`📡 API Base: http://localhost:${PORT}/api`);
-      console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
-      console.log(`🔐 Admin Login: POST http://localhost:${PORT}/api/auth/admin/login`);
-      console.log(`📊 Admin Stats: GET http://localhost:${PORT}/api/auth/admin/dashboard/stats`);
-      console.log(`🎨 Artworks: GET http://localhost:${PORT}/api/artworks`);
-      console.log(`📂 Categories: GET http://localhost:${PORT}/api/categories`);
-      console.log('');
-      console.log('🔑 Default Admin Credentials:');
-      console.log('   📧 Email: admin@elouarate.com');
-      console.log('   🔒 Password: Admin123!');
-      console.log('');
-      console.log('✅ Professional Server Ready for Production!');
-      console.log('🚀 ================================================');
+    // Get port from environment variable with fallback
+    const port = process.env.PORT || 3001;
+    
+    // Start server
+    app.listen(port, '0.0.0.0', () => {
+      console.log(`🚀 Server running on port ${port}`);
+      console.log(`🔗 Health check available at http://localhost:${port}/api/health`);
     });
 
-    // Graceful shutdown
-    const shutdown = (signal) => {
-      console.log(`\n📴 Received ${signal}, shutting down gracefully...`);
-      server.close(async () => {
-        try {
-          // Cleanup admin service
-          await adminService.disconnect();
-          console.log('✅ Database connections closed');
-        } catch (error) {
-          console.error('❌ Error during cleanup:', error.message);
-        }
-        console.log('✅ Server shutdown complete');
-        process.exit(0);
-      });
-    };
+    // Handle graceful shutdown
+    ['SIGINT', 'SIGTERM'].forEach(signal => {
+      process.on(signal, () => shutdown(signal));
+    });
 
-    process.on('SIGTERM', () => shutdown('SIGTERM'));
-    process.on('SIGINT', () => shutdown('SIGINT'));
-    
-    return server;
-    
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
-    
-    if (error.code === 'EADDRINUSE') {
-      console.log('');
-      console.log('🔧 Port 3000 is already in use. To fix this:');
-      console.log('   1. Kill existing processes: taskkill /F /IM node.exe');
-      console.log('   2. Or use a different port: PORT=3001 node server-clean.js');
-      console.log('');
-    }
-    
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
 };
