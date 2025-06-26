@@ -2,8 +2,10 @@
 
 WORKDIR /app
 
-# Install dependencies
+# Copy package files
 COPY package*.json ./
+
+# Install dependencies
 RUN npm install
 
 # Copy source code
@@ -19,5 +21,5 @@ EXPOSE 3000
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Start the server
-CMD ["node", "server-clean.js"]
+# Use the working server file
+CMD ["node", "server.js"]
