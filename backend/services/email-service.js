@@ -236,4 +236,6 @@ class EmailService {
   }
 }
 
-export default new EmailService(); 
+// Create and export a singleton instance
+const emailService = new EmailService();
+export default emailService; 

@@ -1,5 +1,5 @@
 import express from 'express';
-import db from '../lib/db.js';
+import prisma from '../lib/db.js';
 
 const router = express.Router();
 
@@ -9,7 +9,7 @@ router.get('/sitemap.xml', async (req, res) => {
     const baseUrl = process.env.FRONTEND_URL || 'https://elouarateart.com';
     
     // Get all active artworks
-    const artworks = await db.artwork.findMany({
+    const artworks = await prisma.artwork.findMany({
       where: {
         isActive: true,
         status: 'AVAILABLE'
@@ -23,7 +23,7 @@ router.get('/sitemap.xml', async (req, res) => {
     });
 
     // Get all active categories
-    const categories = await db.category.findMany({
+    const categories = await prisma.category.findMany({
       where: {
         isActive: true
       },

@@ -69,7 +69,7 @@ const adminService = {
       console.log('✅ Admin authentication successful:', email);
 
       // Update last login
-      await db.admin.update({
+      await prisma.admin.update({
         where: { id: admin.id },
         data: { lastLogin: new Date() }
       });
@@ -97,7 +97,7 @@ const adminService = {
       // Hash password with bcrypt instead of SHA-256
       const hashedPassword = await bcrypt.hash(adminData.password, 12);
       
-      const admin = await db.admin.create({
+      const admin = await prisma.admin.create({
         data: {
           username: adminData.username.trim(),
           email: adminData.email.toLowerCase().trim(),
@@ -147,7 +147,7 @@ const adminService = {
     try {
       console.log('🔐 Initializing admin system...');
       
-      const adminCount = await db.admin.count({ where: { isActive: true } });
+      const adminCount = await prisma.admin.count({ where: { isActive: true } });
       
       if (adminCount > 0) {
         console.log('✅ Admin system already initialized');
@@ -157,7 +157,7 @@ const adminService = {
       // Create default admin with bcrypt hashed password
       const hashedPassword = await bcrypt.hash('Admin123!@#', 12);
       
-      const admin = await db.admin.create({
+      const admin = await prisma.admin.create({
         data: {
           username: 'admin',
           email: 'admin@elouarate.com',
