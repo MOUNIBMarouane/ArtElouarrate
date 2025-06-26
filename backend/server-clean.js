@@ -25,7 +25,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
-import db from './lib/db.js';
+import prisma from './lib/db.js';
 import sitemapRoutes from './routes/sitemap.js';
 import emailService from './services/email-service.js';
 import crypto from 'crypto';
@@ -36,7 +36,7 @@ import bcrypt from 'bcryptjs';
 const adminService = {
   async adminExists() {
     try {
-      const count = await db.admin.count({ where: { isActive: true } });
+      const count = await prisma.admin.count({ where: { isActive: true } });
       return count > 0;
     } catch (error) {
       console.log('Database check failed, assuming no admin exists');
@@ -49,7 +49,7 @@ const adminService = {
       console.log('🔍 Authenticating admin:', email);
 
       // Try database authentication first
-      const admin = await db.admin.findFirst({
+      const admin = await prisma.admin.findFirst({
         where: { email: email.toLowerCase(), isActive: true }
       });
 
