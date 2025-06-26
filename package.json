@@ -1,11 +1,12 @@
 ﻿{
   "name": "elouarate-art",
   "version": "1.0.0",
+  "type": "module",
   "scripts": {
-    "build": "cd backend && npm install",
+    "build": "cd backend && npm install && npx prisma generate",
     "start": "cd backend && node server-clean.js"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "18.x"
   }
 }
