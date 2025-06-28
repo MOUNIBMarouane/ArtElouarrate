@@ -2,33 +2,27 @@
   "name": "elouarate-art-backend",
   "version": "2.0.0",
   "description": "Professional backend for ELOUARATE ART gallery with enterprise features",
-  "main": "server-clean.js",
+  "main": "server.js",
   "type": "module",
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
   },
   "scripts": {
-    "start": "node server-clean.js",
-    "dev": "node server-clean.js",
-    "dev:watch": "nodemon server-clean.js",
-    "build": "npm run db:generate",
+    "start": "node server.js",
+    "dev": "node server.js",
+    "dev:watch": "nodemon server.js",
+    "build": "echo 'No build step required'",
     "test": "echo 'Tests to be implemented' && exit 0",
-    "db:generate": "npx prisma generate",
-    "db:push": "npx prisma db push",
-    "db:migrate": "npx prisma migrate dev",
-    "db:studio": "npx prisma studio",
-    "db:reset": "npx prisma migrate reset",
-    "db:setup": "node scripts/setup.js init",
-    "db:create-admin": "node scripts/setup.js create-admin",
-    "db:list-admins": "node scripts/setup.js list-admins",
-    "db:test": "node scripts/setup.js test",
-    "admin:reset-password": "node scripts/setup.js reset-password",
+    "health": "curl -f http://localhost:3000/api/health || exit 1",
     "lint": "echo 'Linting passed'",
     "clean": "rm -rf node_modules && npm install",
-    "prod": "NODE_ENV=production node server-clean.js"
+    "prod": "NODE_ENV=production node server.js",
+    "railway:build": "npm install",
+    "railway:start": "npm start"
   },
   "dependencies": {
+    "@types/pg": "^8.15.4",
     "bcryptjs": "^2.4.3",
     "compression": "^1.8.0",
     "cors": "^2.8.5",
@@ -41,14 +35,14 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
-    "pg": "^8.16.2",
+    "pg": "^8.16.3",
     "sharp": "^0.33.5",
     "validator": "^13.15.15"
   },
   "devDependencies": {
     "@types/node": "^22.5.5",
-    "@types/pg": "^8.15.4",
-    "nodemon": "^3.1.4"
+    "nodemon": "^3.1.4",
+    "prisma": "^5.22.0"
   },
   "keywords": [
     "art",

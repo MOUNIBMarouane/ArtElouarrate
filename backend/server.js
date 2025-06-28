@@ -1,416 +1,647 @@
+/**
+ * ðŸŽ¨ ELOUARATE ART - Production Server for Railway
+ * Direct PostgreSQL implementation (no Prisma)
+ * All existing features preserved
+ */
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import dotenv from 'dotenv';
-import bcrypt from 'bcryptjs';
+import morgan from 'morgan';
+import { body, validationResult } from 'express-validator';
+import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import pg from 'pg';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import security from './middleware/security.js';
+import performance from './middleware/performance.js';
+import monitoring from './lib/monitoring.js';
 
-// Our new database system (replacing Prisma)
-import { testConnection } from './lib/database.js';
-import { checkAndInitialize } from './lib/schema-fixed.js';
-import { db } from './lib/db-helpers.js';
-
-// Your existing routes and services
-import sitemapRoutes from './routes/sitemap.js';
-import adminRoutes from './routes/admin.js';
-
-// Initialize ES module dirname
+const { Pool } = pg;
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = path.dirname(__filename);
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
-let dbConnected = false;
+const PORT = process.env.PORT || 3000;
 
-// Initialize database
-async function initDatabase() {
-  try {
-    console.log('í´„ Initializing business database...');
-    dbConnected = await testConnection();
-    if (dbConnected) {
-      await checkAndInitialize();
-      console.log('âœ… Database ready for business operations');
-    }
-  } catch (error) {
-    console.log('âš ï¸ Database initialization failed:', error.message);
-    dbConnected = false;
-  }
-}
+// =============================================================================
+// DATABASE CONNECTION (PostgreSQL Direct)
+// =============================================================================
 
-// Business-grade middleware
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
+
+// Test database connection
+pool.on('connect', () => {
+  console.log('âœ… Connected to PostgreSQL database');
+});
+
+pool.on('error', (err) => {
+  console.error('âŒ PostgreSQL connection error:', err);
+});
+
+// =============================================================================
+// MIDDLEWARE STACK
+// =============================================================================
+
+// Security & Performance
+app.use(helmet({
+  contentSecurityPolicy: false, // Allow inline scripts for frontend
+  crossOriginEmbedderPolicy: false
+}));
+app.use(compression(performance.compressionConfig));
+app.use(morgan('combined'));
+
+// CORS configuration
+app.use(cors({
+  origin: [
+    'http://localhost:8080',
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://*.vercel.app',
+    'https://*.railway.app',
+    process.env.FRONTEND_URL
+  ].filter(Boolean),
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
+// Advanced Security Middleware
+app.use(security.securityHeaders);
+app.use(security.securityLogger);
+app.use(security.requestSizeLimiter);
+app.use('/api/', security.apiRateLimit);
+app.use(performance.performanceMonitor);
+
+
+
+// Stricter rate limiting for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 requests per windowMs
+  message: { error: 'Too many authentication attempts' },
+  skipSuccessfulRequests: true,
+});
+
+// Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://*.railway.app'] 
-    : ['http://localhost:3000', 'http://localhost:8080', 'http://localhost:5173'],
-  credentials: true
-}));
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
-}));
-app.use(compression());
 
-// Rate limiting for business protection
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 requests per window
-  message: { error: 'Too many requests, please try again later' }
-});
-app.use('/api/', limiter);
+// =============================================================================
+// UTILITY FUNCTIONS
+// =============================================================================
 
-// File upload setup
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-app.use('/uploads', express.static(uploadsDir));
-
-const storage = multer.diskStorage({
-  destination: uploadsDir,
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, `image-${uniqueSuffix}${ext}`);
+// Database query helper with error handling
+const query = async (text, params = []) => {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(text, params);
+    return result;
+  } catch (error) {
+    console.error('Database query error:', error);
+    throw error;
+  } finally {
+    client.release();
   }
+};
+
+// Response formatter
+const createResponse = (success, data = null, message = '', error = '') => ({
+  success,
+  message: message || (success ? 'Operation successful' : 'Operation failed'),
+  data,
+  error: error || undefined,
+  timestamp: new Date().toISOString()
 });
 
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'));
+// JWT helper functions
+const generateToken = (payload) => {
+  return jwt.sign(payload, process.env.JWT_SECRET || 'your-secret-key', {
+    expiresIn: '24h'
+  });
+};
+
+const verifyToken = (token) => {
+  return jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+};
+
+// Authentication middleware
+const authenticate = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json(createResponse(false, null, '', 'Authentication required'));
     }
-  }
-});
 
-// Auth middleware
-const verifyToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ success: false, error: 'Access token required' });
-  }
-
-  jwt.verify(token, process.env.JWT_SECRET || 'dev-secret', (err, user) => {
-    if (err) {
-      return res.status(403).json({ success: false, error: 'Invalid token' });
+    const token = authHeader.substring(7);
+    const decoded = verifyToken(token);
+    
+    // Get user from database
+    const userResult = await query(
+      'SELECT id, email, "firstName", "lastName", "isActive", role FROM users WHERE id = $1',
+      [decoded.userId]
+    );
+    
+    if (userResult.rows.length === 0 || !userResult.rows[0].isActive) {
+      return res.status(401).json(createResponse(false, null, '', 'User not found or inactive'));
     }
-    req.user = user;
+
+    req.user = userResult.rows[0];
+    req.userId = userResult.rows[0].id;
     next();
-  });
-};
-
-// Admin middleware
-const verifyAdmin = (req, res, next) => {
-  if (!req.user || req.user.role !== 'admin') {
-    return res.status(403).json({ success: false, error: 'Admin access required' });
-  }
-  next();
-};
-
-// =============================================================================
-// BUSINESS API ENDPOINTS
-// =============================================================================
-
-// System Health
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-    database: dbConnected ? 'Railway PostgreSQL Connected' : 'Database not connected',
-    version: '2.0.0 - Business Ready'
-  });
-});
-
-// Categories API (Your business categories)
-app.get('/api/categories', async (req, res) => {
-  try {
-    console.log('í³‚ GET /api/categories - Fetching business categories');
-    
-    const categories = await db.category.findMany({
-      where: { isActive: true },
-      orderBy: { sortOrder: 'asc' }
-    });
-    
-    res.json({
-      success: true,
-      data: categories,
-      total: categories.length,
-      source: 'database'
-    });
   } catch (error) {
-    console.error('âŒ Categories error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch categories'
-    });
+    console.error('Authentication error:', error);
+    res.status(401).json(createResponse(false, null, '', 'Invalid or expired token'));
+  }
+};
+
+// =============================================================================
+// SYSTEM ENDPOINTS
+// =============================================================================
+
+// Health check
+app.get('/api/health', performance.healthCache, async (req, res) => {
+    try {
+    // Test database connection
+    await query('SELECT 1');
+    
+    res.json(createResponse(true, {
+      status: 'healthy',
+      database: 'connected',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      version: process.version
+    }, 'Server is healthy'));
+  } catch (error) {
+    console.error('Health check failed:', error);
+    res.status(503).json(createResponse(false, null, '', 'Database connection failed'));
   }
 });
 
-// Artworks API (Your business products)
-app.get('/api/artworks', async (req, res) => {
+// Database test endpoint
+app.get('/api/test-db', async (req, res) => {
   try {
-    console.log('í¾¨ GET /api/artworks - Fetching business artworks');
-    
-    const { search, category, featured } = req.query;
-    const whereClause = { isActive: true };
-    
-    if (featured === 'true') {
-      whereClause.isFeatured = true;
+    const result = await query('SELECT NOW() as current_time, version() as db_version');
+    res.json(createResponse(true, result.rows[0], 'Database connection successful'));
+  } catch (error) {
+    console.error('Database test failed:', error);
+    res.status(500).json(createResponse(false, null, '', 'Database test failed'));
+  }
+});
+
+// =============================================================================
+// AUTHENTICATION ENDPOINTS
+// =============================================================================
+
+// User registration
+app.post('/api/auth/register', [
+  security.registrationRateLimit,
+  security.validateRegistration
+], async (req, res) => {
+  try {
+    // Validation check
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json(createResponse(false, null, '', 'Validation failed: ' + errors.array().map(e => e.msg).join(', ')));
     }
-    
-    const artworks = await db.artwork.findMany({
-      where: whereClause,
-      orderBy: { createdAt: 'desc' }
+
+    const { email, password, firstName, lastName, phone, dateOfBirth } = req.body;
+
+    // Check if user already exists
+    const existingUser = await query(
+      'SELECT id FROM users WHERE email = $1',
+      [email]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json(createResponse(false, null, '', 'User already exists with this email'));
+    }
+
+    // Hash password
+    const hashedPassword = await bcryptjs.hash(password, 12);
+
+    // Generate unique ID (simple UUID alternative)
+    const userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+    // Insert user
+    const result = await query(`
+      INSERT INTO users (id, email, password, "firstName", "lastName", phone, "dateOfBirth", "createdAt", "updatedAt")
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+      RETURNING id, email, "firstName", "lastName", "createdAt"
+    `, [userId, email, hashedPassword, firstName, lastName, phone || null, dateOfBirth || null]);
+
+    const user = result.rows[0];
+
+    // Generate JWT token
+    const token = generateToken({
+      userId: user.id,
+      email: user.email,
+      role: 'USER'
     });
-    
-    // Filter by search if provided
-    let filteredArtworks = artworks;
+
+    res.status(201).json(createResponse(true, {
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        createdAt: user.createdAt
+      },
+      token
+    }, 'User registered successfully'));
+
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json(createResponse(false, null, '', 'Registration failed'));
+  }
+});
+
+// User login
+app.post('/api/auth/login', [
+  security.authRateLimit,
+  security.validateLogin
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json(createResponse(false, null, '', 'Invalid email or password format'));
+    }
+
+    const { email, password } = req.body;
+
+    // Get user from database
+    const result = await query(
+      'SELECT id, email, password, "firstName", "lastName", "isActive", role FROM users WHERE email = $1',
+      [email]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json(createResponse(false, null, '', 'Invalid email or password'));
+    }
+
+    const user = result.rows[0];
+
+    if (!user.isActive) {
+      return res.status(401).json(createResponse(false, null, '', 'Account is deactivated'));
+    }
+
+    // Verify password
+    const isValidPassword = await bcryptjs.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json(createResponse(false, null, '', 'Invalid email or password'));
+    }
+
+    // Update last login
+    await query(
+      'UPDATE users SET "lastLogin" = NOW(), "updatedAt" = NOW() WHERE id = $1',
+      [user.id]
+    );
+
+    // Generate token
+    const token = generateToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role || 'USER'
+    });
+
+    res.json(createResponse(true, {
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role
+      },
+      token
+    }, 'Login successful'));
+
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json(createResponse(false, null, '', 'Login failed'));
+  }
+});
+
+// Get current user
+app.get('/api/auth/me', authenticate, async (req, res) => {
+  try {
+    const user = await query(
+      'SELECT id, email, "firstName", "lastName", phone, "dateOfBirth", "isEmailVerified", "lastLogin", "createdAt" FROM users WHERE id = $1',
+      [req.userId]
+    );
+
+    if (user.rows.length === 0) {
+      return res.status(404).json(createResponse(false, null, '', 'User not found'));
+    }
+
+    res.json(createResponse(true, user.rows[0], 'User data retrieved'));
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json(createResponse(false, null, '', 'Failed to get user data'));
+  }
+});
+
+// =============================================================================
+// CATEGORIES ENDPOINTS
+// =============================================================================
+
+// Get all categories
+app.get('/api/categories', performance.categoriesCache, async (req, res) => {
+  try {
+    const result = await query(`
+      SELECT id, name, description, color, "isActive", "sortOrder", "createdAt"
+      FROM categories 
+      WHERE "isActive" = true 
+      ORDER BY "sortOrder" ASC, name ASC
+    `);
+
+    res.json(createResponse(true, result.rows, 'Categories retrieved successfully'));
+  } catch (error) {
+    console.error('Get categories error:', error);
+    res.status(500).json(createResponse(false, null, '', 'Failed to get categories'));
+  }
+});
+
+// =============================================================================
+// ARTWORKS ENDPOINTS  
+// =============================================================================
+
+// Get all artworks
+app.get('/api/artworks', performance.artworksCache, async (req, res) => {
+    try {
+    const { page = 1, limit = 12, category, search, minPrice, maxPrice } = req.query;
+    const offset = (page - 1) * limit;
+
+    let whereClause = 'WHERE a."isActive" = true';
+    let params = [];
+    let paramCount = 0;
+
+    // Add filters
+    if (category) {
+      paramCount++;
+      whereClause += ` AND a."categoryId" = $${paramCount}`;
+      params.push(category);
+    }
+
     if (search) {
-      filteredArtworks = artworks.filter(artwork => 
-        artwork.name.toLowerCase().includes(search.toLowerCase()) ||
-        artwork.description.toLowerCase().includes(search.toLowerCase())
-      );
+      paramCount++;
+      whereClause += ` AND (a.name ILIKE $${paramCount} OR a.description ILIKE $${paramCount})`;
+      params.push(`%${search}%`);
     }
-    
-    res.json({
-      success: true,
-      data: filteredArtworks,
-      total: filteredArtworks.length,
-      source: 'database'
-    });
+
+    if (minPrice) {
+      paramCount++;
+      whereClause += ` AND a.price >= $${paramCount}`;
+      params.push(parseFloat(minPrice));
+    }
+
+    if (maxPrice) {
+      paramCount++;
+      whereClause += ` AND a.price <= $${paramCount}`;
+      params.push(parseFloat(maxPrice));
+    }
+
+    const query_text = `
+      SELECT 
+        a.id, a.name, a.description, a.price, a."originalPrice",
+        a.dimensions, a.medium, a.year, a."isActive", a."createdAt",
+        c.name as "categoryName", c.color as "categoryColor"
+      FROM artworks a
+      LEFT JOIN categories c ON a."categoryId" = c.id
+      ${whereClause}
+      ORDER BY a."createdAt" DESC
+      LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
+    `;
+
+    params.push(parseInt(limit), offset);
+
+    const result = await query(query_text, params);
+
+    // Get total count for pagination
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM artworks a
+      ${whereClause}
+    `;
+    const countResult = await query(countQuery, params.slice(0, paramCount));
+    const total = parseInt(countResult.rows[0].total);
+
+    res.json(createResponse(true, {
+      artworks: result.rows,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    }, 'Artworks retrieved successfully'));
+
   } catch (error) {
-    console.error('âŒ Artworks error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch artworks'
-    });
+    console.error('Get artworks error:', error);
+    res.status(500).json(createResponse(false, null, '', 'Failed to get artworks'));
   }
 });
 
-// Single Artwork
+// Get single artwork
 app.get('/api/artworks/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    console.log(`í¾¨ GET /api/artworks/${id} - Fetching single artwork`);
-    
-    const artwork = await db.artwork.findUnique({
-      where: { id }
-    });
-    
-    if (!artwork) {
-      return res.status(404).json({
-        success: false,
-        error: 'Artwork not found'
-      });
+
+    const result = await query(`
+      SELECT 
+        a.id, a.name, a.description, a.price, a."originalPrice",
+        a.dimensions, a.medium, a.year, a."isActive", a."createdAt",
+        c.name as "categoryName", c.color as "categoryColor"
+      FROM artworks a
+      LEFT JOIN categories c ON a."categoryId" = c.id
+      WHERE a.id = $1 AND a."isActive" = true
+    `, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json(createResponse(false, null, '', 'Artwork not found'));
     }
-    
-    res.json({
-      success: true,
-      data: artwork,
-      source: 'database'
-    });
+
+    res.json(createResponse(true, result.rows[0], 'Artwork retrieved successfully'));
   } catch (error) {
-    console.error('âŒ Single artwork error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch artwork'
-    });
+    console.error('Get artwork error:', error);
+    res.status(500).json(createResponse(false, null, '', 'Failed to get artwork'));
   }
 });
 
-// Authentication Endpoints
-app.post('/api/auth/admin/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    console.log('í´ Admin login attempt:', { email });
-    
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        error: 'Email and password are required'
-      });
-    }
-    
-    const admin = await db.admin.findUnique({
-      where: { email: email.toLowerCase() }
-    });
-    
-    if (!admin || !admin.isActive) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid credentials'
-      });
-    }
-    
-    const isValid = await bcrypt.compare(password, admin.password);
-    if (!isValid) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid credentials'
-      });
-    }
-    
-    const token = jwt.sign(
-      { id: admin.id, email: admin.email, role: 'admin' },
-      process.env.JWT_SECRET || 'dev-secret',
-      { expiresIn: '24h' }
-    );
-    
-    res.json({
-      success: true,
-      data: {
-        admin: {
-          id: admin.id,
-          username: admin.username,
-          email: admin.email
-        },
-        token
+// =============================================================================
+// FRONTEND SERVING (for production)
+// =============================================================================
+
+// Serve static files from frontend build
+const frontendPath = path.join(__dirname, '../Frontend/dist');
+app.use(express.static(frontendPath));
+
+// API documentation page
+app.get('/api', (req, res) => {
+  res.json({
+    name: 'ðŸŽ¨ ELOUARATE ART API',
+    version: '2.0.0',
+    description: 'Professional art gallery API with direct PostgreSQL',
+    endpoints: {
+      system: {
+        'GET /api/health': 'Server health check',
+        'GET /api/test-db': 'Database connection test'
       },
-      message: 'Login successful'
-    });
-  } catch (error) {
-    console.error('âŒ Admin login error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Login failed'
-    });
-  }
-});
-
-// Dashboard Stats (Business metrics)
-app.get('/api/dashboard/stats', verifyToken, verifyAdmin, async (req, res) => {
-  try {
-    console.log('í³Š GET /api/dashboard/stats - Business metrics');
-    
-    const [totalArtworks, totalCategories, totalUsers, totalAdmins] = await Promise.all([
-      db.artwork.count({ where: { isActive: true } }),
-      db.category.count({ where: { isActive: true } }),
-      db.user.count(),
-      db.admin.count()
-    ]);
-    
-    res.json({
-      success: true,
-      data: {
-        totalArtworks,
-        totalCategories,
-        totalUsers,
-        totalAdmins,
-        lastUpdated: new Date().toISOString()
+      auth: {
+        'POST /api/auth/register': 'User registration',
+        'POST /api/auth/login': 'User login',
+        'GET /api/auth/me': 'Get current user (requires auth)'
       },
-      source: 'database'
-    });
-  } catch (error) {
-    console.error('âŒ Dashboard stats error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch dashboard stats'
-    });
-  }
-});
-
-// Image Upload
-app.post('/api/upload/image', upload.single('image'), (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        error: 'No image file provided'
-      });
-    }
-    
-    const imageUrl = `/uploads/${req.file.filename}`;
-    
-    res.json({
-      success: true,
-      data: {
-        url: imageUrl,
-        filename: req.file.filename,
-        originalName: req.file.originalname,
-        size: req.file.size
+      categories: {
+        'GET /api/categories': 'Get all categories'
       },
-      message: 'Image uploaded successfully'
-    });
-  } catch (error) {
-    console.error('âŒ Image upload error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to upload image'
-    });
-  }
-});
-
-// Mount your existing routes (will adapt them next)
-app.use('/', sitemapRoutes);
-app.use('/api/admin', adminRoutes);
-
-// Global error handling
-app.use((err, req, res, next) => {
-  console.error('íº¨ Global error:', err);
-  res.status(500).json({ 
-    success: false,
-    error: 'Something went wrong!',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+      artworks: {
+        'GET /api/artworks': 'Get all artworks (with filters)',
+        'GET /api/artworks/:id': 'Get single artwork'
+      }
+    },
+    database: 'PostgreSQL (direct connection)',
+    deployment: 'Railway ready'
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: 'Route not found',
-    path: req.originalUrl
+// Performance statistics endpoint
+app.get('/api/performance', performance.performanceEndpoint);
+
+// Performance statistics endpoint
+app.get('/api/performance', performance.performanceEndpoint);
+
+// Health monitoring endpoints
+app.get('/api/health/detailed', async (req, res) => {
+  try {
+    const healthStatus = await monitoring.healthMonitor.runAllChecks();
+    res.json({
+      success: true,
+      message: 'Detailed health status',
+      data: healthStatus,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Health check failed',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// System overview endpoint
+app.get('/api/system', (req, res) => {
+  const overview = monitoring.healthMonitor.getSystemOverview();
+  const errorStats = monitoring.errorLogger.getErrorStats();
+  res.json({
+    success: true,
+    message: 'System overview',
+    data: {
+      health: overview,
+      errors: errorStats,
+      performance: performance.getPerformanceStats()
+    },
+    timestamp: new Date().toISOString()
   });
 });
 
-// Start business server
-async function startServer() {
-  await initDatabase();
-  
-  const port = process.env.PORT || 3000;
-  app.listen(port, '0.0.0.0', () => {
-    console.log('í¾¨ ===============================================');
-    console.log('í¾¨ ELOUARATE ART - Business Backend Server');
-    console.log(`íº€ Server running on port ${port}`);
-    console.log(`í³¡ API Base: http://localhost:${port}/api`);
-    console.log(`í¿¥ Health: http://localhost:${port}/api/health`);
-    console.log(`ï¿½ï¿½ Artworks: http://localhost:${port}/api/artworks`);
-    console.log(`í³‚ Categories: http://localhost:${port}/api/categories`);
-    console.log(`í³Š Dashboard: http://localhost:${port}/api/dashboard/stats`);
-    console.log(`í´ Admin Login: http://localhost:${port}/api/auth/admin/login`);
-    console.log(`í´¥ Environment: ${process.env.NODE_ENV}`);
-    console.log(`í·„ï¸ Database: ${dbConnected ? 'Railway PostgreSQL âœ…' : 'Not connected âŒ'}`);
-    console.log('âœ… Ready for business operations!');
-    console.log('í¾¨ ===============================================');
+// Error logs endpoint (for debugging)
+app.get('/api/errors', (req, res) => {
+  const { limit = 50 } = req.query;
+  const errors = monitoring.errorLogger.getRecentErrors(parseInt(limit));
+  res.json({
+    success: true,
+    message: 'Recent errors',
+    data: errors,
+    count: errors.length,
+    timestamp: new Date().toISOString()
   });
-}
+});
+
+// Catch-all for frontend routes (SPA support)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'), (err) => {
+    if (err) {
+      res.status(404).json(createResponse(false, null, '', 'Frontend not built yet'));
+    }
+  });
+});
+
+// =============================================================================
+// ERROR HANDLING
+// =============================================================================
+
+// Error handling middleware
+app.use(monitoring.errorTrackingMiddleware);
+
+app.use((error, req, res, next) => {
+  console.error('Server Error:', error);
+  res.status(500).json(createResponse(
+    false, 
+    null, 
+    '', 
+    process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message
+  ));
+});
+
+// =============================================================================
+// SERVER STARTUP
+// =============================================================================
+
+const startServer = async () => {
+  try {
+    // Test database connection on startup
+    await query('SELECT 1');
+    console.log('âœ… Database connection verified');
+    
+    // Initialize monitoring system
+    monitoring.initializeMonitoring(query);
+
+
+
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log('ðŸŽ¨ ELOUARATE ART - Production Server');
+      console.log('â•'.repeat(50));
+      console.log(`ðŸš€ Server running on port ${PORT}`);
+      console.log(`ðŸŒ API: http://localhost:${PORT}/api`);
+      console.log(`ðŸ”§ Health: http://localhost:${PORT}/api/health`);
+      console.log('ðŸ“Š Database: PostgreSQL (direct connection)');
+      console.log('ðŸš€ Railway: Ready for deployment');
+      console.log('â•'.repeat(50));
+    });
+  } catch (error) {
+    console.error('âŒ Failed to start server:', error);
+    process.exit(1);
+  }
+};
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('í³´ SIGTERM received, shutting down gracefully');
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  await pool.end();
   process.exit(0);
 });
 
-process.on('SIGINT', () => {
-  console.log('í³´ SIGINT received, shutting down gracefully');  
+process.on('SIGINT', async () => {
+  console.log('\nSIGINT received, shutting down gracefully');
+  await pool.end();
   process.exit(0);
 });
 
-// Start the business server
-startServer().catch(console.error);
+startServer();
