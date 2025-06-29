@@ -1,12 +1,8 @@
-﻿{
-  "name": "elouarate-art",
+{
+  "name": "storepint",
   "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "start": "cd backend && node server-clean.js",
-    "build": "cd backend && npm install && npx prisma generate"
-  },
-  "engines": {
-    "node": "18.x"
-  }
+  "private": true,
+  "workspaces": [
+    "frontend-nextjs"
+  ]
 }
