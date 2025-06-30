@@ -2,7 +2,7 @@
 builder = "NIXPACKS"
 
 [deploy]
-healthcheckPath = "/health"
+healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 startCommand = "npm start"
 
